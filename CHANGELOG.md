@@ -1,5 +1,10 @@
 # Changelog
 
+- Add the owner-specific optimiser MCP with saved-character lists, owned matrix
+  preparation and guarded native windows. Register only the three intended
+  tools, enforce private source configuration, preserve other MCP settings and
+  keep live tests deferred.
+
 - Connect saved owner characters, resolved physical gear variants and full
   captured talent allocations to native joint windows. Generate bounded owned
   domains, reject changed sources and retain the native level-60 scoring guard.

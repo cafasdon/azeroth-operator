@@ -9,6 +9,10 @@ The [owned build adapter](docs/ADR-113-owned-build-optimisation.md) connects tha
 capture's gear and full talent allocation to bounded joint model experiments.
 Unsupported native levels remain explicit plan-only limits.
 
+The [owned optimiser MCP](docs/owned-build-mcp-activation-2026-11-16.md) exposes
+saved character lists, owned search preparation and native windows. Its default
+is the saved export character; an explicit name and realm take precedence.
+
 The [local optimisation machine](docs/optimisation-machine.md) defines the joint
 character optimiser, research basis and measurable acceptance gates. The first
 [native joint evaluator](docs/joint-build-optimizer.md) scores complete small

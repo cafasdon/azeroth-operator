@@ -16,7 +16,7 @@ storage, unchanged files and equivalent schema serialisations:
 ./.venv/Scripts/python.exe -B -m unittest discover -s tests -p test_owned_build_source.py -q
 ```
 
-Two independent Astra/high lenses covered callers/failures and security/data.
+Two independent reviewers requested as Astra/high covered callers/failures and security/data.
 One medium finding caused valid default selection to fail after native JSON
 normalisation. Timestamp instants and absent/empty `unavailable` now compare
 equally; all other fields stay exact. The scoped security recheck passed:

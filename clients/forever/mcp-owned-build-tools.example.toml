@@ -1,0 +1,10 @@
+
+[mcp_servers."azeroth-owned-builds"]
+"command" = "T:\\Projects\\Azeroth Operator\\.venv\\Scripts\\python.exe"
+"args" = ["-B", "-m", "tools.owned_build_mcp", "serve", "--source", "T:\\Projects\\Azeroth Operator\\local-data\\owned-build-config.json", "--catalogue", "T:\\Projects\\Azeroth Operator\\local-data\\forever\\catalogue.json", "--probe", "T:\\Projects\\Azeroth Operator\\local-data\\forever-build-runtime\\833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983\\equipment-probe.exe", "--engine", "T:\\Projects\\Azeroth Operator\\local-data\\forever-build-runtime\\833ff767872622329beed4317bea8127caa2e5911f174f8bc336d845b8e94983\\wowsimcli-positional.exe", "--cache-root", "T:\\Projects\\Azeroth Operator\\local-data\\forever-build-runtime\\numeric-cache"]
+"cwd" = "T:\\Projects\\Azeroth Operator"
+"env" = {"PYTHONPATH" = "T:\\Projects\\Azeroth Operator", "GOMAXPROCS" = "2"}
+"enabled" = true
+"enabled_tools" = ["list_owned_build_characters", "prepare_owned_build_search", "evaluate_owned_build_window"]
+"startup_timeout_sec" = 30
+"tool_timeout_sec" = 300

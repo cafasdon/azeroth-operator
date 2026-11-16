@@ -1,0 +1,137 @@
+{
+  "date": "2026-11-16",
+  "scope": "Offline installed owner-bound MCP, no live game",
+  "configuration": {
+    "added_server": "azeroth-owned-builds",
+    "enabled_tools": [
+      "list_owned_build_characters",
+      "prepare_owned_build_search",
+      "evaluate_owned_build_window"
+    ],
+    "preserved_existing_servers": 21,
+    "all_previous_bytes_preserved": true,
+    "unrelated_values_preserved": true,
+    "private_source_config": true,
+    "source_bytes_unchanged": true,
+    "private_backup_matches": true,
+    "native_parser_passed": true,
+    "idempotent_plan": true,
+    "lf_only": true,
+    "config_sha256": "379149c3941bfe3a2cdc3cf5b7a2afc8fcb1390674cb956b6ed0eae28361067a",
+    "game_execution": false
+  },
+  "installed": {
+    "all_three_tools_discovered": true,
+    "actual_saved_default_and_explicit_same_capture": true,
+    "unsupported_level_preserved": true,
+    "live_game_test": false,
+    "private_payload_published": false
+  },
+  "native_client": {
+    "servers": [
+      {
+        "server": "azeroth-owned-builds",
+        "tools": [
+          "evaluate_owned_build_window",
+          "list_owned_build_characters",
+          "prepare_owned_build_search"
+        ],
+        "discovered": true
+      }
+    ],
+    "strict_config_accepted": true,
+    "model_request_sent": false,
+    "game_execution": false
+  },
+  "private_saved_core_acceptance": {
+    "saved_default_and_explicit_same_capture": true,
+    "source_verified": true,
+    "unsupported_level_preserved": true,
+    "missing_bank_unknown": true,
+    "native_simulation": false,
+    "game_execution": false,
+    "private_sources_unchanged": true
+  },
+  "test_runs": [
+    {
+      "module": "tests.test_owned_build_source",
+      "passed": 13,
+      "seconds": 1.849
+    },
+    {
+      "module": "tests.test_owned_build_optimizer",
+      "passed": 12,
+      "seconds": 31.541
+    },
+    {
+      "module": "tests.test_install_build_mcp",
+      "passed": 22,
+      "seconds": 5.226,
+      "runner": "implementation agent direct run"
+    },
+    {
+      "module": "tests.test_owned_build_mcp",
+      "passed": 3,
+      "skipped": 1,
+      "seconds": 9.76,
+      "scope": "synthetic saved SDK routes, native evaluation/cache and unsafe source permissions"
+    },
+    {
+      "module": "tests.test_owned_build_mcp.test_installed_saved_character_routes",
+      "passed": 1,
+      "seconds": 3.416
+    },
+    {
+      "module": "tests.test_native_build_config",
+      "passed": 1,
+      "seconds": 3.922,
+      "scope": "owned; exact saved entry isolated native discovery"
+    }
+  ],
+  "wrapper_review": {
+    "rounds": 1,
+    "lenses": [
+      "callers and failure",
+      "security and data"
+    ],
+    "requested_model": "gpt-6-astra/high",
+    "resolved_model_exposed": false,
+    "usage_exposed": false,
+    "medium_high_findings": 0,
+    "probes": [
+      "real stdio tools/list and all three calls",
+      "pagination and recency of capture age",
+      "schema and authority override generic errors",
+      "cancelled worker remains busy until completion",
+      "unsafe source DACL startup refusal and private config discovery",
+      "additive registration, conflict/arbitrary-name refusal and idempotence"
+    ],
+    "trivial_low_fixed": "Documentation now states requested reviewer models without claiming exposed resolution."
+  },
+  "readiness": {
+    "resolved_model": "jev-1.14.0",
+    "request_sha256": "b2304b5b4e66b4e81e75219bae116f3340c9fe33e78473986e791e0b2288eaba",
+    "input_tokens": 631,
+    "output_tokens": 47,
+    "elapsed_seconds": 0.29,
+    "disposition": "proceed"
+  },
+  "limits": [
+    "Default identity is the character at the configured saved addon export, not verified current play.",
+    "Explicit character overrides the saved export; no newest-alt fallback.",
+    "A new export must exist in the account index and hash-bound store before default preparation succeeds.",
+    "Actual saved unsupported level stayed plan-only; no private character native score or live test.",
+    "Level60 synthetic capture native execution is separate from model calibration, full BiS or legality.",
+    "Shared banks, mail, other characters and historical banks remain excluded from available candidate copies.",
+    "The active chat has not exposed the new namespace. Fresh native-client discovery passed; refresh/restart client to load it.",
+    "Source config and raw owner data remain local; public evidence contains no identity, item list, capture ID or model profile."
+  ],
+  "release_judgement": {
+    "resolved_model": "jev-1.14.0",
+    "request_sha256": "32344a6fe847074b241076817b7a1eaa9676684581f11af5177a400eefcce739",
+    "input_tokens": 745,
+    "output_tokens": 45,
+    "elapsed_seconds": 0.323,
+    "disposition": "ship"
+  }
+}

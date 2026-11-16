@@ -41,6 +41,22 @@ def desired_entries(project_root):
              '--cache-root', runtime.parent / 'numeric-cache'))}
 
 
+def desired_owned_entry(project_root):
+    root = ordinary(Path(project_root))
+    if not root.is_absolute():
+        raise ValueError(ERROR)
+    root = root.resolve()
+    entry = deepcopy(desired_entries(root)['azeroth-joint-public256'])
+    runtime = root / 'local-data' / 'forever-build-runtime' / ENGINE_SHA256
+    entry.update(args=['-B', '-m', 'tools.owned_build_mcp', 'serve',
+        '--source', str(root / 'local-data' / 'owned-build-config.json'),
+        '--catalogue', str(root / 'local-data' / 'forever' / 'catalogue.json'),
+        '--probe', str(runtime / 'equipment-probe.exe'), '--engine', str(runtime / 'wowsimcli-positional.exe'),
+        '--cache-root', str(runtime.parent / 'numeric-cache')], tool_timeout_sec=300,
+        enabled_tools=['list_owned_build_characters', 'prepare_owned_build_search', 'evaluate_owned_build_window'])
+    return {'azeroth-owned-builds': entry}
+
+
 def parsed(data):
     return tomllib.loads(data.decode('utf-8'))
 
@@ -59,7 +75,7 @@ def plan_configuration(existing_bytes, entries):
     """Preserve unrelated values; reject an existing target with different values."""
     try:
         before = parsed(existing_bytes)
-        if not entries or set(entries) - set(desired_entries(Path(__file__).resolve().parents[1])):
+        if not entries or set(entries) - (set(desired_entries(Path(__file__).resolve().parents[1])) | {'azeroth-owned-builds'}):
             raise ValueError(ERROR)
         servers = before.get('mcp_servers', {})
         if not isinstance(servers, dict):
@@ -257,9 +273,10 @@ def main():
     parser.add_argument('--stage-dir', type=Path)
     parser.add_argument('--codex-launcher', nargs='+')
     parser.add_argument('--apply', action='store_true')
+    parser.add_argument('--owned-only', action='store_true')
     args = parser.parse_args()
     try:
-        entries = desired_entries(args.project)
+        entries = (desired_owned_entry if args.owned_only else desired_entries)(args.project)
         if args.apply:
             if args.stage_dir is None or not args.codex_launcher:
                 raise ValueError(ERROR)

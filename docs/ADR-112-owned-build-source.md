@@ -38,5 +38,6 @@ Validation uses real Rust decoding, the account index and hash-bound snapshots:
 ./.venv/Scripts/python.exe -B -m unittest discover -s tests -p test_owned_build_source.py -v
 ```
 
-The next adapter connects this source to owned gear/talent generation and native
-joint windows. The native model's level-60 restriction remains in force.
+The [owned adapter](ADR-113-owned-build-optimisation.md) connects this source to
+gear/talent generation and native joint windows. The model's level-60 restriction
+remains in force.

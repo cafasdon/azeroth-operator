@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import tomllib
 import unittest
-from tools.install_build_mcp import plan_configuration,desired_entries,private_directory
+from tools.install_build_mcp import plan_configuration,desired_entries,desired_owned_entry,private_directory
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -14,9 +14,9 @@ ROOT=Path(__file__).resolve().parents[1]
 class NativeBuildConfigTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get('AZEROTH_MCP_CONFIG') and os.environ.get('AZEROTH_NATIVE_CODEX_HOME'),
                          'Explicit saved configuration and private native check home needed')
-    def test_native_client_discovers_all_six_tools(self):
+    def test_native_client_discovers_configured_tools(self):
         source=tomllib.loads(Path(os.environ['AZEROTH_MCP_CONFIG']).read_bytes().decode())
-        entries=desired_entries(ROOT)
+        entries=desired_owned_entry(ROOT) if os.environ.get('AZEROTH_NATIVE_MCP_SCOPE')=='owned' else desired_entries(ROOT)
         self.assertTrue(all(source['mcp_servers'][name]==value for name,value in entries.items()))
         home=Path(os.environ['AZEROTH_NATIVE_CODEX_HOME']);private_directory(home)
         base=b'[apps._default]\nenabled=false\n[analytics]\nenabled=false\n'

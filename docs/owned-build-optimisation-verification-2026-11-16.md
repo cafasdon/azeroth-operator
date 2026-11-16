@@ -29,7 +29,7 @@ unknown and native simulation did not run. Source hashes stayed unchanged.
 Only this boolean acceptance summary is public; identities, items, capture IDs,
 account keys and model profiles remain local.
 
-Two Astra/high review lenses covered callers/failure and security/data. The
+Two independent reviewers requested as Astra/high covered callers/failure and security/data. The
 caller lens found numeric protobuf enums rejected by the adapter. Canonical
 native names now retain explicitly supplied proto3 defaults. Its scoped recheck
 then found an empty talent string omitted by the second canonicalisation; the
