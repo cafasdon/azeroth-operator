@@ -1,5 +1,10 @@
 # Changelog
 
+- Connect saved owner characters, resolved physical gear variants and full
+  captured talent allocations to native joint windows. Generate bounded owned
+  domains, reject changed sources and retain the native level-60 scoring guard.
+  Missing data stays plan-only; shared banks and mail do not become gear stock.
+
 - Bind offline optimiser sources to one configured owner account and exact
   saved client. Use the saved addon export character by default; an explicit
   name and realm override it. Add a read-only native export decoder, preserve

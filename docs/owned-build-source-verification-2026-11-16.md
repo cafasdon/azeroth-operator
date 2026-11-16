@@ -45,6 +45,7 @@ Typed advisory evidence (`jev-1.14.0`; no private payloads submitted):
 | Plan | `7c2a905eaeef994d5d64e3bda95c28fe69fc4510d5c4639c8d9c19dd8cd9064d` | 731/47 | 0.330 | proceed |
 | Timestamp finding | `b3105ad650c3c61c679acedbf1b427a3f68e466dfcee0316a3b6084f50a48540` | 490/48 | 0.289 | fix medium |
 | Empty-map finding | `b3b2d72c2e61a02066599b26558d0463ad8aa5bf79ca3887aedd8f43b3ef1cde` | 456/48 | 0.327 | fix medium |
+| Source release | `8ac6994461759f574b8eff5d66308340bb1e8b01729d20f1d04af646d2d8a3b3` | 458/45 | 0.327 | ship |
 
 Agent model requests were `gpt-6-astra/high`; resolved model and usage counters
 were not exposed. Review used one full round and one scoped recheck.
